@@ -15,7 +15,7 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v2  # 使用更稳定的 v2 版本
+      uses: actions/checkout@v4  # 使用更稳定的 v2 版本
       with:
         submodules: recursive
 
@@ -42,7 +42,7 @@ jobs:
         cmake --build build_win32 --config %build_type% --target onnxruntime --parallel 2
 
     - name: Archive Windows artifacts
-      uses: actions/upload-artifact@v2  # 使用兼容性更好的 v2 版本
+      uses: actions/upload-artifact@v4  # 使用兼容性更好的 v2 版本
       with:
         name: onnxruntime-win32-static
         path: build_win32/%build_type%/onnxruntime.lib
@@ -56,7 +56,7 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v2  # 使用更稳定的 v2 版本
+      uses: actions/checkout@v4  # 使用更稳定的 v2 版本
       with:
         submodules: recursive
 
@@ -80,7 +80,7 @@ jobs:
         cmake --build build_ubuntu --config $build_type --target onnxruntime --parallel 2
 
     - name: Archive Ubuntu artifacts
-      uses: actions/upload-artifact@v2  # 使用兼容性更好的 v2 版本
+      uses: actions/upload-artifact@v4  # 使用兼容性更好的 v2 版本
       with:
         name: onnxruntime-ubuntu64-static
         path: build_ubuntu/libonnxruntime.a
