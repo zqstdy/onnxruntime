@@ -15,14 +15,14 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v2  # 使用更稳定的 v2 版本
       with:
         submodules: recursive
 
     - name: Install dependencies
       run: |
-        choco install cmake --installargs 'ADD_CMAKE_TO_PATH=System'
-        choco install python --version=3.8
+        choco install cmake --installargs 'ADD_CMAKE_TO_PATH=System' -y
+        choco install python --version=3.8 -y
         python -m pip install numpy
 
     - name: Configure CMake (Win32)
@@ -39,10 +39,10 @@ jobs:
     - name: Build Windows 32-bit
       shell: cmd
       run: |
-        cmake --build build_win32 --config %build_type% --target onnxruntime --parallel 4
+        cmake --build build_win32 --config %build_type% --target onnxruntime --parallel 2
 
     - name: Archive Windows artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v2  # 使用兼容性更好的 v2 版本
       with:
         name: onnxruntime-win32-static
         path: build_win32/%build_type%/onnxruntime.lib
@@ -56,7 +56,7 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v2  # 使用更稳定的 v2 版本
       with:
         submodules: recursive
 
@@ -77,10 +77,10 @@ jobs:
 
     - name: Build Ubuntu 64-bit
       run: |
-        cmake --build build_ubuntu --config $build_type --target onnxruntime --parallel 4
+        cmake --build build_ubuntu --config $build_type --target onnxruntime --parallel 2
 
     - name: Archive Ubuntu artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v2  # 使用兼容性更好的 v2 版本
       with:
         name: onnxruntime-ubuntu64-static
         path: build_ubuntu/libonnxruntime.a
