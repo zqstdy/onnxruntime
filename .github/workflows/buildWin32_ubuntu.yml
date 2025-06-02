@@ -1,0 +1,86 @@
+name: Build ONNX Runtime Static Libraries
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-win32:
+    name: Build Windows 32-bit Static
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        build_type: [Release]
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Install dependencies
+      run: |
+        choco install cmake --installargs 'ADD_CMAKE_TO_PATH=System'
+        choco install python --version=3.8
+        python -m pip install numpy
+
+    - name: Configure CMake (Win32)
+      shell: cmd
+      run: |
+        cmake -B build_win32 -G "Visual Studio 17 2022" -A Win32 ^
+          -DCMAKE_SYSTEM_VERSION=10.0.19041.0 ^
+          -Donnxruntime_BUILD_SHARED_LIB=OFF ^
+          -Donnxruntime_ENABLE_PYTHON=OFF ^
+          -Donnxruntime_BUILD_UNIT_TESTS=OFF ^
+          -Donnxruntime_USE_PREINSTALLED_EIGEN=ON ^
+          -DCMAKE_BUILD_TYPE=%build_type%
+
+    - name: Build Windows 32-bit
+      shell: cmd
+      run: |
+        cmake --build build_win32 --config %build_type% --target onnxruntime --parallel 4
+
+    - name: Archive Windows artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: onnxruntime-win32-static
+        path: build_win32/%build_type%/onnxruntime.lib
+
+  build-ubuntu64:
+    name: Build Ubuntu 64-bit Static
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        build_type: [Release]
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y cmake build-essential python3-pip
+        python3 -m pip install numpy
+
+    - name: Configure CMake (Ubuntu)
+      run: |
+        cmake -B build_ubuntu -G "Unix Makefiles" \
+          -Donnxruntime_BUILD_SHARED_LIB=OFF \
+          -Donnxruntime_ENABLE_PYTHON=OFF \
+          -Donnxruntime_BUILD_UNIT_TESTS=OFF \
+          -Donnxruntime_USE_PREINSTALLED_EIGEN=ON \
+          -DCMAKE_BUILD_TYPE=$build_type
+
+    - name: Build Ubuntu 64-bit
+      run: |
+        cmake --build build_ubuntu --config $build_type --target onnxruntime --parallel 4
+
+    - name: Archive Ubuntu artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: onnxruntime-ubuntu64-static
+        path: build_ubuntu/libonnxruntime.a
