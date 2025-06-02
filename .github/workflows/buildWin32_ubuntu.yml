@@ -1,136 +1,30 @@
-name: Static Build ONNX Runtime
+name: Build ONNX Runtime
 
-on:
-  push:
-    branches: [main]
-  workflow_dispatch:
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
-  cancel-in-progress: true
+on: [workflow_dispatch]
 
 jobs:
-  build_win32_static:
-    name: Build Windows 32-bit Static
+  build-win32:
     runs-on: windows-latest
-    timeout-minutes: 300
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          submodules: true
-          path: onnxruntime-src
+    - name: Checkout
+      run: git clone --recursive https://github.com/zqstdy/onnxruntime.git onnxruntime-src
+      
+    - name: Build
+      run: |
+        cd onnxruntime-src/cmake
+        cmake -B build -G "Visual Studio 17 2022" -A Win32 -DCMAKE_BUILD_TYPE=Release -Donnxruntime_BUILD_SHARED_LIB=OFF
+        cmake --build build --config Release
+      shell: cmd
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-          architecture: x86
-
-      - name: Install dependencies
-        shell: cmd
-        run: |
-          choco install cmake ninja -y
-          python -m pip install -r "onnxruntime-src\tools\ci_build\github\windows\python\requirements.txt"
-
-      - name: Configure static build
-        shell: cmd
-        run: |
-          cmake -S onnxruntime-src -B build -G Ninja ^
-            -DCMAKE_BUILD_TYPE=Release ^
-            -DCMAKE_SYSTEM_VERSION=10.0.19041.0 ^
-            -A Win32 ^
-            -Donnxruntime_BUILD_SHARED_LIB=OFF ^
-            -Donnxruntime_ENABLE_PYTHON=OFF ^
-            -Donnxruntime_BUILD_UNIT_TESTS=OFF ^
-            -Donnxruntime_USE_PREINSTALLED_EIGEN=ON ^
-            -Donnxruntime_USE_CUDA=OFF ^
-            -Donnxruntime_USE_DNNL=OFF ^
-            -Donnxruntime_USE_TENSORRT=OFF ^
-            -Donnxruntime_USE_MKLML=OFF ^
-            -Donnxruntime_USE_OPENVINO=OFF ^
-            -Donnxruntime_USE_OPENMP=ON ^
-            -DCMAKE_CXX_FLAGS="/MT" ^
-            -DCMAKE_C_FLAGS="/MT"
-
-      - name: Build static library
-        shell: cmd
-        run: |
-          cmake --build build --config Release --target onnxruntime
-          
-      - name: Verify build output
-        shell: cmd
-        run: |
-          dir build\Release /s
-          
-      - name: Package artifacts
-        shell: cmd
-        run: |
-          7z a -tzip onnxruntime-win32-static.zip build\Release\onnxruntime.lib
-          
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: onnxruntime-win32-static
-          path: onnxruntime-win32-static.zip
-
-  build_ubuntu64_static:
-    name: Build Ubuntu 64-bit Static
+  build-ubuntu:
     runs-on: ubuntu-latest
-    timeout-minutes: 300
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          submodules: true
-          path: onnxruntime-src
-
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y cmake ninja-build build-essential python3-pip
-          python3 -m pip install -r "onnxruntime-src/tools/ci_build/github/linux/python/requirements.txt"
-
-      - name: Debug directory structure
-        run: |
-          pwd
-          ls -la
-          ls -la onnxruntime-src
-          ls -la onnxruntime-src/CMakeLists.txt
-
-      - name: Configure static build
-        run: |
-          cmake -S onnxruntime-src -B build -G Ninja \
-            -DCMAKE_BUILD_TYPE=Release \
-            -Donnxruntime_BUILD_SHARED_LIB=OFF \
-            -Donnxruntime_ENABLE_PYTHON=OFF \
-            -Donnxruntime_BUILD_UNIT_TESTS=OFF \
-            -Donnxruntime_USE_PREINSTALLED_EIGEN=ON \
-            -Donnxruntime_USE_CUDA=OFF \
-            -Donnxruntime_USE_DNNL=OFF \
-            -Donnxruntime_USE_TENSORRT=OFF \
-            -Donnxruntime_USE_MKLML=OFF \
-            -Donnxruntime_USE_OPENVINO=OFF \
-            -Donnxruntime_USE_OPENMP=ON \
-            -DCMAKE_CXX_FLAGS="-static-libgcc -static-libstdc++" \
-            -DCMAKE_C_FLAGS="-static-libgcc"
-
-      - name: Build static library
-        run: |
-          cmake --build build --config Release --target onnxruntime
-          
-      - name: Verify build output
-        run: |
-          find build -name libonnxruntime.a -ls
-          
-      - name: Package artifacts
-        run: |
-          zip -r onnxruntime-ubuntu64-static.zip build/libonnxruntime.a
-          
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: onnxruntime-ubuntu64-static
-          path: onnxruntime-ubuntu64-static.zip
+    - name: Checkout
+      run: git clone --recursive https://github.com/zqstdy/onnxruntime.git onnxruntime-src
+      
+    - name: Build
+      run: |
+        cd onnxruntime-src/cmake
+        cmake -B build -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -Donnxruntime_BUILD_SHARED_LIB=OFF
+        cmake --build build
+      shell: bash
